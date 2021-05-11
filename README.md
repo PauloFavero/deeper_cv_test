@@ -1,1 +1,9 @@
 # deeper_cv_test
+
+* Answers to the following questions:
+    1. How well do you expect this to work on other images?
+        The script is failing on vertical images. This is probably due when warping the image. I think the script is not correctly managing the height x width on these images. The script does not depend on the color space so it will work perfectly fine on gray images for example. The script only accepts jpg images but this can be easily fixed. It just needs to look at the file system for other formats. The algorithm has a margin error to detect and calculate the checker based on its size. I expect this script to mainly work on horizontal images and not on vertical images at the moment.
+    2. What are possible fail cases of this approach and how would you address them?
+        Board with a high bar height could hide a little bit the checkers nearby the board bars. This could be a problem in detecting the checkers in this situation. To fix this case, I think a better approach would be to train a neural network for object detection like MASK-RCNN, PointRend(mmdetection), or YoLo. The neural network would be very precise in this case. 
+    4. How would you implement finding the colors of the checkers and distinguishing which player the checker belongs to?
+        There are multiple ways of distinguishing the colors based on the circle area. The Hough transform gives to us the center and the radius of a region. From this defined circle we could get an average per channel for all circles in the image. Then, for each circle, we verify if the color is less or greater than the average. If it is less, the checker belongs to player 1, for example. Another way to do this is to define a color range for each channel and verify if a specific checker is inside the range or not.
