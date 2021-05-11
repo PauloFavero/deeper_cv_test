@@ -1,0 +1,4 @@
+{
+    "python.pythonPath": "/Users/paulohenriquefaveropereira/miniconda3/envs/deepersystems/bin/python",
+    "python.formatting.provider": "black"
+}
