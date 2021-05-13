@@ -69,29 +69,12 @@ for img_path in input_imgs:
 
 	max_height = int(max_width/board_width_to_board_height)
 
+	warped, transform = projective_trans(img_original, board_coord, board_width_to_board_height)
+
 	# objects dimensions
 	checker_diameter = int(max_width/(12 + bar_width_to_checker_width))
 	bar_width = int((bar_width_to_checker_width*checker_diameter)/2)
 	pip_length = int(5*checker_diameter)
-
-	warped, transform = projective_trans(img_original, board_coord, board_width_to_board_height)
-	# cv2.imshow("img_original", img_original)
-	# cv2.imshow("warped", warped)
-	# cv2.waitKey(0)
-
-	#transform warped image to grayscale
-	gray_warped = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
-	#compute the circles
-	circles = cv2.HoughCircles(gray_warped,cv2.HOUGH_GRADIENT,1,int(checker_diameter/2),
-                            param1=50,param2=30,minRadius=int((checker_diameter/2)*0.9),maxRadius=int((checker_diameter/2)*1.1))
-	circles = np.uint16(np.around(circles))
-
-	for i in circles[0,:]:
-		# draw the outer circle
-		cv2.circle(warped,(i[0],i[1]),i[2],(0,255,0),2)
-		# draw the center of the circle
-		cv2.circle(warped,(i[0],i[1]),2,(0,0,255),3)
-
 	#image size 
 	height, width = warped.shape[:2]
 	#half board width
@@ -99,72 +82,88 @@ for img_path in input_imgs:
 	#half board height
 	half_height = int( height/2)
 
+	#transform warped image to grayscale
+	gray_warped = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
+	#compute the circles
+	circles = cv2.HoughCircles(gray_warped,cv2.HOUGH_GRADIENT,1,int(checker_diameter/2),
+                            param1=50,param2=30,minRadius=int((checker_diameter/2)*0.9),maxRadius=int((checker_diameter/2)*1.1))
+	
 	top_list = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 	bottom_list = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-	#for each pip on the bottom left
-	for n_pip in range(0,6):
-		tl_pip = (n_pip*checker_diameter, height - pip_length)
-		br_pip = (tl_pip[0] + checker_diameter, height)
-		# cv2.rectangle(warped, tl_pip, br_pip, color=(255,0,0), thickness=5)
+	if circles is not None:
+		circles = np.uint16(np.around(circles))
+
+		# draw circles
 		for i in circles[0,:]:
-			x_center = i[0]
-			y_center = i[1]
-			radius = i[2]
-			# checker is inside pip
-			if x_center > tl_pip[0] and x_center < br_pip[0]:
-				if y_center > tl_pip[1]:
-					bottom_list[n_pip] = bottom_list[n_pip] + 1
+			# draw the outer circle
+			cv2.circle(warped,(i[0],i[1]),i[2],(0,255,0),2)
+			# draw the center of the circle
+			cv2.circle(warped,(i[0],i[1]),2,(0,0,255),3)
+			
+		#for each pip on the bottom left
+		for n_pip in range(0,6):
+			tl_pip = (n_pip*checker_diameter, height - pip_length)
+			br_pip = (tl_pip[0] + checker_diameter, height)
+			# cv2.rectangle(warped, tl_pip, br_pip, color=(255,0,0), thickness=5)
+			for i in circles[0,:]:
+				x_center = i[0]
+				y_center = i[1]
+				radius = i[2]
+				# checker is inside pip
+				if x_center > tl_pip[0] and x_center < br_pip[0]:
+					if y_center > tl_pip[1]:
+						bottom_list[n_pip] = bottom_list[n_pip] + 1
 
-	#for each pip on the bottom right
-	for n_pip in range(6,12):
-		tl_pip = (n_pip*checker_diameter + 2*bar_width, height -  pip_length)
-		br_pip = (tl_pip[0] + checker_diameter, height)
-		# cv2.rectangle(warped, tl_pip, br_pip, color=(0,255,0), thickness=5)
-		for i in circles[0,:]:
-			x_center = i[0]
-			y_center = i[1]
-			radius = i[2]
+		#for each pip on the bottom right
+		for n_pip in range(6,12):
+			tl_pip = (n_pip*checker_diameter + 2*bar_width, height -  pip_length)
+			br_pip = (tl_pip[0] + checker_diameter, height)
+			# cv2.rectangle(warped, tl_pip, br_pip, color=(0,255,0), thickness=5)
+			for i in circles[0,:]:
+				x_center = i[0]
+				y_center = i[1]
+				radius = i[2]
 
-			# # checker is over the bar
-			# if x_center > half_width and x_center < half_width + 2*bar_width:
-			# 	continue
-			# checker is inside pip
-			if x_center > tl_pip[0] and x_center < br_pip[0]:
-				if y_center > tl_pip[1]:
-					bottom_list[n_pip] = bottom_list[n_pip] + 1
+				# # checker is over the bar
+				# if x_center > half_width and x_center < half_width + 2*bar_width:
+				# 	continue
+				# checker is inside pip
+				if x_center > tl_pip[0] and x_center < br_pip[0]:
+					if y_center > tl_pip[1]:
+						bottom_list[n_pip] = bottom_list[n_pip] + 1
 
 
-	#for each pip on the top left
-	for n_pip in range(0,6):
-		tl_pip = (n_pip*checker_diameter, 0)
-		br_pip = (tl_pip[0] + checker_diameter, pip_length)
-		# cv2.rectangle(warped, tl_pip, br_pip, color=(0,0,255), thickness=5)
-		for i in circles[0,:]:
-			x_center = i[0]
-			y_center = i[1]
-			radius = i[2]
-			# checker is inside pip
-			if x_center > tl_pip[0] and x_center < br_pip[0]:
-				if y_center > tl_pip[1] and y_center < br_pip[1]:
-					top_list[n_pip] = top_list[n_pip] + 1
+		#for each pip on the top left
+		for n_pip in range(0,6):
+			tl_pip = (n_pip*checker_diameter, 0)
+			br_pip = (tl_pip[0] + checker_diameter, pip_length)
+			# cv2.rectangle(warped, tl_pip, br_pip, color=(0,0,255), thickness=5)
+			for i in circles[0,:]:
+				x_center = i[0]
+				y_center = i[1]
+				radius = i[2]
+				# checker is inside pip
+				if x_center > tl_pip[0] and x_center < br_pip[0]:
+					if y_center > tl_pip[1] and y_center < br_pip[1]:
+						top_list[n_pip] = top_list[n_pip] + 1
 
-	#for each pip on the top right
-	for n_pip in range(6,12):
-		tl_pip = (n_pip*checker_diameter + 2*bar_width, 0)
-		br_pip = (tl_pip[0] + checker_diameter, pip_length)
-		# cv2.rectangle(warped, tl_pip, br_pip, color=(255,255,255), thickness=5)
-		for i in circles[0,:]:
-			x_center = i[0]
-			y_center = i[1]
-			radius = i[2]
+		#for each pip on the top right
+		for n_pip in range(6,12):
+			tl_pip = (n_pip*checker_diameter + 2*bar_width, 0)
+			br_pip = (tl_pip[0] + checker_diameter, pip_length)
+			# cv2.rectangle(warped, tl_pip, br_pip, color=(255,255,255), thickness=5)
+			for i in circles[0,:]:
+				x_center = i[0]
+				y_center = i[1]
+				radius = i[2]
 
-			# # checker is over the bar
-			# if x_center > half_width and x_center < half_width + 2*bar_width:
-			# 	continue
-			# checker is inside pip
-			if x_center > tl_pip[0] and x_center < br_pip[0]:
-				if y_center > tl_pip[1] and y_center < br_pip[1]:
-					top_list[n_pip] = top_list[n_pip] + 1
+				# # checker is over the bar
+				# if x_center > half_width and x_center < half_width + 2*bar_width:
+				# 	continue
+				# checker is inside pip
+				if x_center > tl_pip[0] and x_center < br_pip[0]:
+					if y_center > tl_pip[1] and y_center < br_pip[1]:
+						top_list[n_pip] = top_list[n_pip] + 1
 
 	# cv2.rectangle(warped, tl, br, color=(0,255,0), thickness=5)
 	# cv2.imshow('detected circles', warped)
